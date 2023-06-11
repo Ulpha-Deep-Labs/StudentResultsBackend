@@ -38,8 +38,8 @@ class Department(models.Model):
 class Student(models.Model):
     profile = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     reg_no = models.IntegerField()
-    student_dept = models.OneToOneField('Department', on_delete=models.CASCADE, default=1)
-    student_sch = models.OneToOneField('Faculty', on_delete=models.CASCADE, default=1)
+    student_dept = models.ForeignKey('Department', on_delete=models.CASCADE)
+    student_sch = models.ForeignKey('Faculty', on_delete=models.CASCADE)
     courses = models.ManyToManyField('Course', related_name='courses_offered')
     level = models.CharField(max_length=3)
     cgpa = models.DecimalField(max_digits= 3, decimal_places=2, default=5.0)
