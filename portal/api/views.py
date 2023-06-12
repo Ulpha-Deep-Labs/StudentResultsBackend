@@ -2,6 +2,10 @@ from rest_framework import generics
 from results.models import Student
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
@@ -23,17 +27,3 @@ class StudentAPIView(generics.ListAPIView):
 class UserDetailView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-
-
-class UserLoginAPIView(APIView):
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-
-        if user is not None:
-            # Authentication Successful
-            return Response({'message': 'Login Successful'})
-        else:
-            #Authentication Failed
-            return Response({'message': 'Invalid Credentials'}, status =401)

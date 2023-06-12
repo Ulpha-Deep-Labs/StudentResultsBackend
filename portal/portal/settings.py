@@ -43,6 +43,15 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_swagger',
     'drf_spectacular',
+    'corsheaders',
+    'rest_framework.authtoken',
+    'allauth',
+    'dj_rest_auth.registration',
+    'allauth.socialaccount',
+    'dj_rest_auth',
+    'django.contrib.sites',
+
+
 ]
 
 MIDDLEWARE = [
@@ -53,8 +62,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
+
+CORS_ORIGIN_ALLOW_ALL = True
 ROOT_URLCONF = 'portal.urls'
 
 TEMPLATES = [
@@ -68,6 +80,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request',
             ],
         },
     },
@@ -77,6 +90,9 @@ WSGI_APPLICATION = 'portal.wsgi.application'
 
 
 REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": ['rest_framework.permissions.IsAuthenticated',],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication",
+                                       "rest_framework.authentication.TokenAuthentication",],
 "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
@@ -149,3 +165,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 LOGIN_URL = 'student/login'
 LOGOUT_URL = 'logout'
+
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+SITE_ID = 1

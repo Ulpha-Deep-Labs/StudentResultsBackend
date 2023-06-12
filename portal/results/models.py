@@ -89,7 +89,7 @@ class Session(models.Model):
 class Course(models.Model):
     name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=20)
-    lecturer = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    lecturer = models.OneToOneField(PortalUsers, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.course_code
