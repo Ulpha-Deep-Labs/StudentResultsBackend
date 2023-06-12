@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-kxb2=f4u*g75)lp_s-8er)tt77ino0dm%*89$8cv0eb^aw(jz@
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
+AUTH_USER_MODEL = 'results.PortalUsers'
 
 # Application definition
 
@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_swagger',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +76,18 @@ TEMPLATES = [
 WSGI_APPLICATION = 'portal.wsgi.application'
 
 
+REST_FRAMEWORK = {
+"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+
+
+SPECTACULAR_SETTINGS = {
+"TITLE": "RESULTS PORTAL API",
+"DESCRIPTION": "RESULT PORTAL API ",
+"VERSION": "1.0.0",
+# OTHER SETTINGS
+}
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

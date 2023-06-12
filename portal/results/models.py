@@ -1,19 +1,22 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 class Faculty(models.Model):
     name = models.CharField(max_length=200)
-    departments = models.ManyToManyField('Department', related_name='departments')
+    departments = models.ManyToManyField('Department', related_name='departments',blank=True)
 
     def __str__(self):
         return self.name
 
 class Department(models.Model):
     name = models.CharField(max_length=200)
-    course_adviser = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    students = models.ManyToManyField('Student', related_name='students_in_dept')
+    course_adviser = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, blank=True)
+    students = models.ManyToManyField('Student', related_name='students_in_dept', blank=True)
 
     LEVEL= (
         ("1", "100"),
@@ -35,19 +38,42 @@ class Department(models.Model):
         return self.name
 
 
+
+
+
+class PortalUsers(AbstractUser):
+    user_des = models.CharField(max_length=200)
+    username = models.CharField(max_length=150, unique=True,
+                                validators=[RegexValidator(
+                                    regex='^[0-9]+$',
+                                    message='Username must be your Reg Number Only',
+                                    code='invalid_username')])
+
+    def clean(self):
+        super().clean()
+
+        if self.is_superuser:
+            return
+
+        if not self.username.isdigit():
+            raise ValidationError({'username': 'username must contain omly numbers'})
+
+    def __str__(self):
+        return f' {self.username} - {self.email}'
+
+
 class Student(models.Model):
-    profile = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    reg_no = models.IntegerField()
-    student_dept = models.ForeignKey('Department', on_delete=models.CASCADE)
+    profile = models.OneToOneField('PortalUsers', on_delete=models.CASCADE)
+    student_dept = models.ForeignKey('Department', on_delete=models.CASCADE )
     student_sch = models.ForeignKey('Faculty', on_delete=models.CASCADE)
     courses = models.ManyToManyField('Course', related_name='courses_offered')
     level = models.CharField(max_length=3)
-    cgpa = models.DecimalField(max_digits= 3, decimal_places=2, default=5.0)
-    gpa = models.DecimalField(max_digits= 3, decimal_places=2, default=5.0)
+    cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
+    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
     photo = models.ImageField(upload_to='photo/%Y/%m/%d/', blank=True)
 
     def __str__(self):
-        return f' {self.profile.username} - {self.reg_no}'
+        return f' {self.profile.username} - {self.profile.first_name}'
 
 class Session(models.Model):
     session_year = models.CharField(max_length=50)
@@ -56,10 +82,14 @@ class Session(models.Model):
     def __str__(self):
         return self.session_year
 
+
+
+
+
 class Course(models.Model):
     name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=20)
-    lecturer =  models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    lecturer = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.course_code
@@ -100,3 +130,7 @@ class CourseItem(models.Model):
         else:
             self.grade = "D"
         super().save(*args, **kwargs)
+
+    def get_total(self):
+        for self.course in self.student.username:
+            return len(self.course.course_code)

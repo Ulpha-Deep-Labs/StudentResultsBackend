@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: RESULTS PORTAL API
+  version: 1.0.0
+  description: 'RESULT PORTAL API '
+paths:
+  /api/:
+    get:
+      operationId: api_list
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'
+          description: ''
+  /api/docs/:
+    get:
+      operationId: api_docs_retrieve
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - corejson
+          - openapi
+          - swagger
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/login/:
+    post:
+      operationId: api_login_create
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/users/:
+    get:
+      operationId: api_users_list
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    Student:
+      type: object
+      properties:
+        profile:
+          type: integer
+        student_dept:
+          type: integer
+        student_sch:
+          type: integer
+        courses:
+          type: array
+          items:
+            type: integer
+        level:
+          type: string
+          maxLength: 3
+        gpa:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        cgpa:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        photo:
+          type: string
+          format: uri
+      required:
+      - courses
+      - level
+      - profile
+      - student_dept
+      - student_sch
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        username:
+          type: string
+          pattern: ^[0-9]+$
+          maxLength: 150
+      required:
+      - id
+      - username
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
