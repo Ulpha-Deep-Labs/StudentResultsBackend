@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from dj_rest_auth.serializers import UserDetailsSerializer
 from results.models import Student
 
 from results.models import Student
@@ -19,6 +20,10 @@ class StudentSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
-        fields = ["id", "first_name", "last_name", "username"]
+        fields = ["id", "first_name", "last_name", "username", 'email']
 
 
+
+class CustomUserDetailsSerializer(UserDetailsSerializer):
+    class Meta(UserDetailsSerializer.Meta):
+        fields = ('id', 'username', 'email', 'first_name', 'last_name')  # Include additional fields as needed

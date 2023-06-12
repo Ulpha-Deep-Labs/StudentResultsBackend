@@ -10,6 +10,9 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from dj_rest_auth.views import UserDetailsView
+from .serializers import CustomUserDetailsSerializer
+
 
 
 
@@ -24,6 +27,11 @@ class StudentAPIView(generics.ListAPIView):
     serializer_class = StudentSerializer
 
 
-class UserDetailView(generics.ListAPIView):
+class UserDetailView(generics.RetrieveUpdateAPIView):
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+class CustomUserDetailsView(UserDetailsView):
+    serializer_class = CustomUserDetailsSerializer
