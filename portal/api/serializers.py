@@ -3,9 +3,15 @@ from django.contrib.auth import get_user_model
 from dj_rest_auth.serializers import UserDetailsSerializer
 from results.models import Student
 
-from results.models import Student
+from results.models import Student, CourseItem
 
 User = get_user_model()
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseItem
+        fields = '__all__'
 
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -13,7 +19,7 @@ class StudentSerializer(serializers.ModelSerializer):
         model = Student
         fields = ('profile','student_dept',
                   'student_sch',
-                  'courses','level',
+                  'courses', 'courses_offered' ,'level',
                   'gpa', 'cgpa', 'photo')
         depth = 1
 
