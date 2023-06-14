@@ -49,22 +49,27 @@ class Student(models.Model):
     student_dept = models.ForeignKey('Department', related_name="dept_student" ,on_delete=models.CASCADE )
     student_sch = models.ForeignKey('Faculty', on_delete=models.CASCADE)
     courses = models.ManyToManyField('Course', related_name='courses_offered')
-    courses_offered = models.ManyToManyField('CourseItem', related_name="courses_details")
     level = models.IntegerField()
     carryovers = models.IntegerField(blank=True)
+    paid_school_fees = models.BooleanField()
     cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
     gpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
     photo = models.ImageField(upload_to='photo/%Y/%m/%d/', blank=True)
 
     def __str__(self):
-        return f' {self.profile.username} - {self.profile.first_name}'
+        return f' {self.profile.username} - {self.student_dept} - {self.level} level'
+
 
 class Session(models.Model):
-    session_year = models.CharField(max_length=50)
-    semester = models.CharField(max_length=20)
+    SESSION_CHOICES = [
+        ('first', 'First'),
+        ('second', 'Second'),
+    ]
+    year= models.PositiveIntegerField()
+    semester = models.CharField(max_length=10, choices=SESSION_CHOICES)
 
     def __str__(self):
-        return self.session_year
+        return f'{str(self.year)} - {self.semester} '
 
 
 
@@ -73,6 +78,7 @@ class Session(models.Model):
 class Course(models.Model):
     name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=20)
+    session = models.ForeignKey('Session', on_delete=models.CASCADE)
     units = models.IntegerField(blank=True)
     lecturer = models.ForeignKey(PortalUsers, on_delete=models.PROTECT)
 
@@ -100,11 +106,13 @@ class Course(models.Model):
 
 class CourseItem(models.Model):
     course = models.ForeignKey(Course, related_name='course', on_delete=models.CASCADE)
-    student = models.OneToOneField(Student, related_name='student', on_delete=models.PROTECT)
+    student = models.ForeignKey(Student, related_name='student', on_delete=models.PROTECT)
     student_course_ca = models.IntegerField()
     student_course_exam_score = models.IntegerField()
     student_grade = models.CharField(max_length=1, blank=True, null=True)
     total_score = models.IntegerField(blank=True)
+    grade_point = models.IntegerField(blank=True)
+    carry_overs = models.BooleanField()
 
 
     def save(self):
@@ -125,6 +133,22 @@ class CourseItem(models.Model):
         else:
             self.student_grade = "F"
 
+        if self.student_grade =='A':
+            self.grade_point =5
+        elif self.student_grade =='B':
+            self.grade_point =4
+        elif self.student_grade =='C':
+            self.grade_point =3
+        elif self.student_grade =='D':
+            self.grade_point =2
+        elif self.student_grade =='E':
+            self.grade_point =1
+
+        elif self.student_grade =='F':
+            self.grade_point =0
+
+        if self.student_grade =='F':
+            self.carry_overs = True
         super().save()
 
 
