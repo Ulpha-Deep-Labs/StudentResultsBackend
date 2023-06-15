@@ -1,9 +1,10 @@
+from django.contrib.auth import get_user_model
 from django.db import models
-from django.contrib.auth.models import User
-from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
+User = get_user_model()
+
 
 # Create your models here.
 class Faculty(models.Model):
@@ -23,41 +24,28 @@ class Department(models.Model):
 
 
 
-class PortalUsers(AbstractUser):
-    user_des = models.CharField(max_length=200)
-    username = models.CharField(max_length=150, unique=True,
-                                validators=[RegexValidator(
-                                    regex='^[0-9]+$',
-                                    message='Username must be your Reg Number Only',
-                                    code='invalid_username')])
-
-    def clean(self):
-        super().clean()
-
-        if self.is_superuser:
-            return
-
-        if not self.username.isdigit():
-            raise ValidationError({'username': 'username must contain omly numbers'})
-
-    def __str__(self):
-        return f' {self.username}'
-
-
 class Student(models.Model):
-    profile = models.OneToOneField('PortalUsers', on_delete=models.CASCADE)
-    student_dept = models.ForeignKey('Department', related_name="dept_student" ,on_delete=models.CASCADE )
-    student_sch = models.ForeignKey('Faculty', on_delete=models.CASCADE)
-    courses = models.ManyToManyField('Course', related_name='courses_offered')
-    level = models.IntegerField()
-    carryovers = models.IntegerField(blank=True)
-    paid_school_fees = models.BooleanField()
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    student_reg = models.CharField(max_length=20, unique=True)
+    student_dept = models.ForeignKey('Department', on_delete=models.CASCADE)
+    level = models.IntegerField(null=True, blank=True)
+    carryovers = models.IntegerField(blank=True, null=True)
+    paid_school_fees = models.BooleanField(null=True)
     cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
     gpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
-    photo = models.ImageField(upload_to='photo/%Y/%m/%d/', blank=True)
+    photo = models.ImageField(upload_to='photo/student/%Y/%m/%d/', blank=True)
 
     def __str__(self):
-        return f' {self.profile.username} - {self.student_dept} - {self.level} level'
+        return self.student_reg
+
+class Staff(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    employee_id = models.CharField(max_length=20, unique=True)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)
+    photo = models.ImageField(upload_to='photo/staff/%Y/%m/%d/', blank=True)
+    def __str__(self):
+        return self.user.username
+
 
 
 class Session(models.Model):
@@ -80,7 +68,7 @@ class Course(models.Model):
     course_code = models.CharField(max_length=20)
     session = models.ForeignKey('Session', on_delete=models.CASCADE)
     units = models.IntegerField(blank=True)
-    lecturer = models.ForeignKey(PortalUsers, on_delete=models.PROTECT)
+    lecturer = models.ForeignKey(Staff, on_delete=models.PROTECT)
 
 
     def __str__(self):
@@ -106,7 +94,7 @@ class Course(models.Model):
 
 class CourseItem(models.Model):
     course = models.ForeignKey(Course, related_name='course', on_delete=models.CASCADE)
-    student = models.ForeignKey(Student, related_name='student', on_delete=models.PROTECT)
+    student = models.ForeignKey(Student, on_delete=models.PROTECT)
     student_course_ca = models.IntegerField()
     student_course_exam_score = models.IntegerField()
     student_grade = models.CharField(max_length=1, blank=True, null=True)

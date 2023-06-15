@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,19 +26,25 @@ SECRET_KEY = 'django-insecure-kxb2=f4u*g75)lp_s-8er)tt77ino0dm%*89$8cv0eb^aw(jz@
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-AUTH_USER_MODEL = 'results.PortalUsers'
 
 # Application definition
 
 INSTALLED_APPS = [
-    'results.apps.ResultsConfig',
-    'api.apps.ApiConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
+
+
+    #local
+    'results.apps.ResultsConfig',
+    'api.apps.ApiConfig',
+    'account.apps.AccountConfig',
+
+    # 3rd Party
     'rest_framework',
     'rest_framework_swagger',
     'drf_spectacular',
@@ -57,16 +62,24 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+
 ]
 
+CORS_ALLOWED_ORIGINS = (
+"http://localhost:3000",
+"http://localhost:8000",
+)
 
 CORS_ORIGIN_ALLOW_ALL = True
+CSRF_TRUSTED_ORIGINS = ["https://localhost:3000"]
+
 ROOT_URLCONF = 'portal.urls'
 
 TEMPLATES = [
@@ -150,14 +163,18 @@ LOGIN_REDIRECT_URL = 'dashboard/'
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE ="whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = "account.CustomUser"
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'

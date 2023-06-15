@@ -28,6 +28,25 @@ Hello {{ request.user.first_name|default:request.user.username }},
 
 </div>
 
+
+<div class="level">
+
+   Level:  <h4>{{ user.student.level }}</h4>
+
+</div>
+
+<div class="level">
+
+   CarryOvers:  <h4>{{ user.student.carryovers }}</h4>
+
+</div>
+
+
+
+<div class="Courses">
+
+</div>
+
 <hr>
 <h4>{{ user.student.student_dept }}</h4>
 <h4>{{ user.student.student_sch}}</h4>

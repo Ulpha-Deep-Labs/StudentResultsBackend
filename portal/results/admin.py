@@ -1,17 +1,9 @@
 from django.contrib import admin
 from . import models
-from .models import PortalUsers
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 # Register your models here.
 
 
-class PortalUserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'user_des')
-
-
-
-
-admin.site.register(PortalUsers, PortalUserAdmin)
 
 
 class CourseItemInline(admin.TabularInline):
@@ -30,6 +22,7 @@ admin.site.register(models.Faculty)
 admin.site.register(models.Department)
 admin.site.register(models.Session)
 admin.site.register(models.Student)
+admin.site.register(models.Staff)
 
 
 
