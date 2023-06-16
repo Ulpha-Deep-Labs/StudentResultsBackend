@@ -187,3 +187,15 @@ class StudentGrade(models.Model):
     def calculate_gpa(self):
         self.gpa = self.total_grade_point / self.total_course_units
         return self.gpa
+
+
+@receiver(post_save, sender=CourseItem)
+def update_student_grade(sender, instance, **kwargs):
+    student_grade, _ = StudentGrade.objects.get_or_create(student=instance.student)
+    student_grade.course.add(instance.course)
+
+    # Perform the necessary calculations and updates to the StudentGrade instance
+    student_grade.total_grade_point = student_grade.calculate_total_grade_point()
+    student_grade.total_course_units = student_grade.calculate_total_course_units()
+    student_grade.gpa = student_grade.calculate_gpa()
+    student_grade.save()
