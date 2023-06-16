@@ -15,24 +15,18 @@ from rest_framework import status
 
 User = get_user_model()
 
+class StudentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
 
-@api_view(['GET'])
-def get_student(request):
-    # Your code goes here
-    if request.user.is_authenticated:
+
+    def get(self, request):
         user = request.user
-    else:
-        return Response({'error': 'User not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
-    try:
-        student = user.student
-    except Student.DoesNotExist:
-        return Response({'error': 'Student data not found'}, status=status.HTTP_404_NOT_FOUND)
-    serializer = StudentSerializer(student)
-    serialized_data = serializer.data
+        try:
+            student = Student.objects.get(user=user)
+            serializer = StudentSerializer(student)
+            return Response(serializer.data)
 
-    return Response(serialized_data, status=status.HTTP_200_OK)
-
-
-
+        except Student.DoesNotExist:
+            return Response({'error': 'Student Data not found'}, status=404)
 
 

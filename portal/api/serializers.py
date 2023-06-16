@@ -8,7 +8,4 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = '__all__'  # Include all fields from the model
-        depth = 0
-
-
-
+        depth = 1

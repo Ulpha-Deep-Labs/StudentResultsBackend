@@ -482,6 +482,17 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/student/:
+    get:
+      operationId: api_student_retrieve
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
 components:
   schemas:
     Login:
