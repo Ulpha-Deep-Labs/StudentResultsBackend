@@ -30,3 +30,4 @@ class StudentDetailView(APIView):
             return Response({'error': 'Student Data not found'}, status=404)
 
 
+

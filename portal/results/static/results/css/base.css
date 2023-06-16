@@ -56,3 +56,11 @@ a{
 margin-top: 50px;
 margin-bottom: 50px;
 }
+
+
+.rounded-passport-photo {
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}

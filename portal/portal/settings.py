@@ -157,7 +157,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-LOGIN_REDIRECT_URL = 'dashboard/'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
@@ -175,12 +174,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "account.CustomUser"
 
-MEDIA_URL = 'media/'
+MEDIA_URL = 'dashboard/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-LOGIN_URL = 'student/login'
-LOGOUT_URL = 'logout'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_URL = 'accounts/logout'
 
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

@@ -11,9 +11,14 @@ from django.contrib import messages
 
 @login_required
 def dashboard(request):
+    # Retrieve the user profile information
+    user_profile = models.Student.objects.get(user=request.user)
 
-    return render(request, 'results/dashboard.html', {'section': 'dashboard'})
+    context = {
+        'user_profile': user_profile,
+    }
 
+    return render(request, 'results/dashboard.html', context)
 
 
 

@@ -15,6 +15,15 @@ Hello {{ request.user.first_name|default:request.user.username }},
 
 <br>
 <hr>
+
+<div class="photo">
+
+  <img src="media/{{ user.student.photo }}"  class="rounded-passport-photo">
+
+</div>
+
+<hr>
+
 <div class="cgpa">
 
    CGPA:  <h4>{{ user.student.cgpa }}</h4>

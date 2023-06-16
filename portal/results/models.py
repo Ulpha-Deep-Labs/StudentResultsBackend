@@ -3,7 +3,10 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
 User = get_user_model()
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 
 
 # Create your models here.
@@ -20,7 +23,28 @@ class Department(models.Model):
     def __str__(self):
         return self.name
 
+class Session(models.Model):
+    SESSION_CHOICES = [
+        ('first', 'First'),
+        ('second', 'Second'),
+    ]
+    year= models.PositiveIntegerField()
+    semester = models.CharField(max_length=10, choices=SESSION_CHOICES)
 
+    def __str__(self):
+        return f'{str(self.year)} - {self.semester} '
+
+
+class Course(models.Model):
+    name = models.CharField(max_length=200)
+    course_code = models.CharField(max_length=20)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    course_units = models.IntegerField(blank=True)
+    lecturer = models.ForeignKey("Staff", on_delete=models.PROTECT)
+
+
+    def __str__(self):
+        return self.course_code
 
 
 
@@ -32,8 +56,12 @@ class Student(models.Model):
     carryovers = models.IntegerField(blank=True, null=True)
     paid_school_fees = models.BooleanField(null=True)
     cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
-    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
+    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     photo = models.ImageField(upload_to='photo/student/%Y/%m/%d/', blank=True)
+
+
+
+
 
     def __str__(self):
         return self.student_reg
@@ -48,31 +76,9 @@ class Staff(models.Model):
 
 
 
-class Session(models.Model):
-    SESSION_CHOICES = [
-        ('first', 'First'),
-        ('second', 'Second'),
-    ]
-    year= models.PositiveIntegerField()
-    semester = models.CharField(max_length=10, choices=SESSION_CHOICES)
-
-    def __str__(self):
-        return f'{str(self.year)} - {self.semester} '
 
 
 
-
-
-class Course(models.Model):
-    name = models.CharField(max_length=200)
-    course_code = models.CharField(max_length=20)
-    session = models.ForeignKey('Session', on_delete=models.CASCADE)
-    units = models.IntegerField(blank=True)
-    lecturer = models.ForeignKey(Staff, on_delete=models.PROTECT)
-
-
-    def __str__(self):
-        return self.course_code
     #student_offering_course = models.ForeignKey(Student, related_name='students_offering_course', on_delete=models.CASCADE)
     #student_course_ca = models.IntegerField()
     #student_course_exam_score = models.IntegerField()
@@ -100,12 +106,14 @@ class CourseItem(models.Model):
     student_grade = models.CharField(max_length=1, blank=True, null=True)
     total_score = models.IntegerField(blank=True)
     grade_point = models.IntegerField(blank=True)
+    t_grade_point = models.IntegerField(blank=True)
     carry_overs = models.BooleanField()
 
 
     def save(self):
         score = self.student_course_ca + self.student_course_exam_score
         self.total_score = score
+
         grade_mapping = {
             (70, 100): "A",
             (60, 69): "B",
@@ -137,14 +145,45 @@ class CourseItem(models.Model):
 
         if self.student_grade =='F':
             self.carry_overs = True
+
+        course_grade = self.grade_point * self.course.course_units
+        self.t_grade_point = course_grade
+
+
         super().save()
-
-
-
-    def get_total(self):
-        for self.course in self.student.username:
-            return len(self.course.course_code)
 
 
     def __str__(self):
         return self.course.course_code
+
+
+
+class StudentGrade(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course = models.ManyToManyField(Course)
+    total_grade_point = models.IntegerField(blank=True, null=True)
+    total_course_units = models.IntegerField(blank=True)
+    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+
+    def __str__(self):
+        return self.student.user.first_name
+
+    def save(self, *args, **kwargs):
+        self.total_grade_point = self.calculate_total_grade_point()
+        self.total_course_units = self.calculate_total_course_units()
+        self.gpa = self.calculate_gpa()
+        super().save(*args, **kwargs)
+
+    def calculate_total_grade_point(self):
+        course_items = CourseItem.objects.filter(student=self.student, course__in=self.course.all())
+        total_grade_point = sum(course_item.t_grade_point for course_item in course_items if course_item.t_grade_point is not None)
+        return total_grade_point
+
+    def calculate_total_course_units(self):
+        course_items = CourseItem.objects.filter(student=self.student, course__in=self.course.all())
+        total_course_units = sum(course_item.course.course_units for course_item in course_items)
+        return total_course_units
+
+    def calculate_gpa(self):
+        self.gpa = self.total_grade_point / self.total_course_units
+        return self.gpa
