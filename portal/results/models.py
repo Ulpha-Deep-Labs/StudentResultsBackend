@@ -56,8 +56,7 @@ class Student(models.Model):
     level = models.IntegerField(null=True, blank=True)
     carryovers = models.IntegerField(blank=True, null=True)
     paid_school_fees = models.BooleanField(null=True)
-    cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
-    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     photo = models.ImageField(upload_to='photo/student/%Y/%m/%d/', blank=True)
 
 
@@ -162,14 +161,22 @@ class StudentGrade(models.Model):
     student = models.OneToOneField(Student, on_delete=models.CASCADE, primary_key=True)
     total_grade_point = models.IntegerField(blank=True, null=True)
     total_course_units = models.IntegerField(blank=True, null=True)
-    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     courses_offered = models.ManyToManyField(Course)
+
+    def __str__(self):
+        return f"{self.student.student_reg} "
 
     def save(self, *args, **kwargs):
         self.total_grade_point = self.calculate_total_grade_point()
         self.total_course_units = self.calculate_total_course_units()
-        self.gpa = self.calculate_gpa()
+        self.cgpa = self.calculate_gpa()
         super().save(*args, **kwargs)
+        self.update_student_cgpa()
+
+    def update_student_cgpa(self):
+        self.student.cgpa = self.cgpa
+        self.student.save()
 
     def calculate_total_grade_point(self):
         course_items = CourseItem.objects.filter(student=self.student, course__in=self.courses_offered.all())
