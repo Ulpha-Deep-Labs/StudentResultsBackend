@@ -13,13 +13,14 @@ from django.db.models.signals import m2m_changed
 # Create your models here.
 class Faculty(models.Model):
     name = models.CharField(max_length=200)
-    departments = models.ManyToManyField('Department', related_name='departments',blank=True)
+    department = models.ManyToManyField('Department', blank=True)
 
     def __str__(self):
         return self.name
 
 class Department(models.Model):
     name = models.CharField(max_length=200)
+
 
     def __str__(self):
         return self.name
@@ -52,6 +53,7 @@ class Course(models.Model):
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     student_reg = models.CharField(max_length=20, unique=True)
+    student_faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
     student_dept = models.ForeignKey('Department', on_delete=models.CASCADE)
     level = models.IntegerField(null=True, blank=True)
     carryovers = models.IntegerField(blank=True, null=True)
@@ -68,7 +70,6 @@ class Student(models.Model):
 
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    employee_id = models.CharField(max_length=20, unique=True)
     department = models.ForeignKey('Department', on_delete=models.CASCADE)
     photo = models.ImageField(upload_to='photo/staff/%Y/%m/%d/', blank=True)
     def __str__(self):
@@ -205,3 +206,18 @@ def update_student_grade(sender, instance, **kwargs):
 @receiver(pre_delete, sender=StudentGrade)
 def delete_related_course_items(sender, instance, **kwargs):
     instance.courses_offered.clear()
+
+
+
+
+@receiver(post_save, sender=CourseItem)
+def update_student_carryovers(sender, instance, **kwargs):
+    # Get the associated Student object
+    student = instance.student
+
+    # Count the number of CourseItems with carry_overs=True
+    carry_overs_count = CourseItem.objects.filter(student=student, carry_overs=True).count()
+
+    # Update the carryovers field in the Student model
+    student.carryovers = carry_overs_count
+    student.save()
