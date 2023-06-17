@@ -99,7 +99,7 @@ class Staff(models.Model):
 
 
 class CourseItem(models.Model):
-    course = models.ForeignKey(Course, related_name='course', on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, related_name='course_items', on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     student_course_ca = models.IntegerField()
     student_course_exam_score = models.IntegerField()
