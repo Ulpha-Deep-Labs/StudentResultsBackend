@@ -11,24 +11,17 @@ class StudentSerializer(serializers.ModelSerializer):
         depth = 1
 
 
-class CourseItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CourseItem
-        fields = '__all__'
-        depth = 1
-
-
-class CourseSerializer(serializers.ModelSerializer):
-    course_items = CourseItemSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Course
-        fields = '__all__'
-        depth = 1
-
-
 class StudentGradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentGrade
-        fields = '__all__'
-        depth = 1
+        fields = ['total_grade_point', 'total_course_units', 'cgpa', 'courses_offered']
+
+class CourseItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseItem
+        fields = ['course', 'student_course_ca', 'student_course_exam_score', 'total_score', 'grade_point', 'carry_overs']
+        depth = 2
+
+class StudentCoursesSerializer(serializers.Serializer):
+    student_grade = StudentGradeSerializer()
+    course_items = CourseItemSerializer(many=True)
