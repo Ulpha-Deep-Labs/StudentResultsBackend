@@ -5,8 +5,9 @@ from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 User = get_user_model()
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
+from django.db.models.signals import m2m_changed
 
 
 # Create your models here.
@@ -100,7 +101,7 @@ class Staff(models.Model):
 
 class CourseItem(models.Model):
     course = models.ForeignKey(Course, related_name='course', on_delete=models.CASCADE)
-    student = models.ForeignKey(Student, on_delete=models.PROTECT)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
     student_course_ca = models.IntegerField()
     student_course_exam_score = models.IntegerField()
     student_grade = models.CharField(max_length=1, blank=True, null=True)
@@ -157,16 +158,12 @@ class CourseItem(models.Model):
         return self.course.course_code
 
 
-
 class StudentGrade(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    course = models.ManyToManyField(Course)
+    student = models.OneToOneField(Student, on_delete=models.CASCADE, primary_key=True)
     total_grade_point = models.IntegerField(blank=True, null=True)
-    total_course_units = models.IntegerField(blank=True)
+    total_course_units = models.IntegerField(blank=True, null=True)
     gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
-
-    def __str__(self):
-        return self.student.user.first_name
+    courses_offered = models.ManyToManyField(Course)
 
     def save(self, *args, **kwargs):
         self.total_grade_point = self.calculate_total_grade_point()
@@ -175,27 +172,29 @@ class StudentGrade(models.Model):
         super().save(*args, **kwargs)
 
     def calculate_total_grade_point(self):
-        course_items = CourseItem.objects.filter(student=self.student, course__in=self.course.all())
+        course_items = CourseItem.objects.filter(student=self.student, course__in=self.courses_offered.all())
         total_grade_point = sum(course_item.t_grade_point for course_item in course_items if course_item.t_grade_point is not None)
         return total_grade_point
 
     def calculate_total_course_units(self):
-        course_items = CourseItem.objects.filter(student=self.student, course__in=self.course.all())
+        course_items = CourseItem.objects.filter(student=self.student, course__in=self.courses_offered.all())
         total_course_units = sum(course_item.course.course_units for course_item in course_items)
         return total_course_units
 
     def calculate_gpa(self):
-        self.gpa = self.total_grade_point / self.total_course_units
+        if self.total_course_units != 0:
+            self.gpa = self.total_grade_point / self.total_course_units
+        else:
+            self.gpa = 0
         return self.gpa
-
 
 @receiver(post_save, sender=CourseItem)
 def update_student_grade(sender, instance, **kwargs):
-    student_grade, _ = StudentGrade.objects.get_or_create(student=instance.student)
-    student_grade.course.add(instance.course)
-
-    # Perform the necessary calculations and updates to the StudentGrade instance
-    student_grade.total_grade_point = student_grade.calculate_total_grade_point()
-    student_grade.total_course_units = student_grade.calculate_total_course_units()
-    student_grade.gpa = student_grade.calculate_gpa()
+    student = instance.student
+    student_grade, _ = StudentGrade.objects.get_or_create(student=student)
+    student_grade.courses_offered.set(student.courseitem_set.values_list('course', flat=True))
     student_grade.save()
+
+@receiver(pre_delete, sender=StudentGrade)
+def delete_related_course_items(sender, instance, **kwargs):
+    instance.courses_offered.clear()
