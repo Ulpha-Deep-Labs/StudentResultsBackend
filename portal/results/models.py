@@ -53,8 +53,8 @@ class Course(models.Model):
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     student_reg = models.CharField(max_length=20, unique=True)
-    student_faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
-    student_dept = models.ForeignKey('Department', on_delete=models.CASCADE)
+    student_faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, null=True)
+    student_dept = models.ForeignKey('Department', on_delete=models.CASCADE, null=True)
     level = models.IntegerField(null=True, blank=True)
     carryovers = models.IntegerField(blank=True, null=True)
     paid_school_fees = models.BooleanField(null=True)
@@ -146,6 +146,8 @@ class CourseItem(models.Model):
 
         if self.student_grade =='F':
             self.carry_overs = True
+        else:
+            self.carry_overs= False
 
         course_grade = self.grade_point * self.course.course_units
         self.t_grade_point = course_grade
@@ -172,8 +174,10 @@ class StudentGrade(models.Model):
         self.total_grade_point = self.calculate_total_grade_point()
         self.total_course_units = self.calculate_total_course_units()
         self.cgpa = self.calculate_gpa()
-        super().save(*args, **kwargs)
         self.update_student_cgpa()
+        super().save(*args, **kwargs)
+        self.student.save()
+
 
     def update_student_cgpa(self):
         self.student.cgpa = self.cgpa
@@ -202,6 +206,7 @@ def update_student_grade(sender, instance, **kwargs):
     student_grade, _ = StudentGrade.objects.get_or_create(student=student)
     student_grade.courses_offered.set(student.courseitem_set.values_list('course', flat=True))
     student_grade.save()
+
 
 @receiver(pre_delete, sender=StudentGrade)
 def delete_related_course_items(sender, instance, **kwargs):
