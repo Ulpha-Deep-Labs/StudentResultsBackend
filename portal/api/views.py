@@ -1,4 +1,5 @@
 from rest_framework import generics
+from rest_framework.generics import RetrieveAPIView
 from results.models import  CourseItem, Student, Course, StudentGrade
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -17,7 +18,7 @@ from rest_framework.exceptions import PermissionDenied
 
 User = get_user_model()
 
-class StudentDetailView(APIView):
+class StudentDetailView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
 
