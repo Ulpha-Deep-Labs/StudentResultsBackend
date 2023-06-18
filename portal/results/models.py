@@ -13,34 +13,44 @@ from django.db.models.signals import m2m_changed
 # Create your models here.
 class Faculty(models.Model):
     name = models.CharField(max_length=200)
-    department = models.ManyToManyField('Department', blank=True)
 
     def __str__(self):
         return self.name
 
 class Department(models.Model):
     name = models.CharField(max_length=200)
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
 
 
     def __str__(self):
         return self.name
 
 class Session(models.Model):
-    SESSION_CHOICES = [
-        ('first', 'First'),
-        ('second', 'Second'),
-    ]
-    year= models.PositiveIntegerField()
-    semester = models.CharField(max_length=10, choices=SESSION_CHOICES)
+    name = models.CharField(max_length=20)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{str(self.year)} - {self.semester} '
+        return self.name
+
+class Level(models.Model):
+    name = models.CharField(max_length=10)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+    
+
+class Semester(models.Model):
+    name = models.CharField(max_length=20)
+    level = models.ForeignKey(Level, on_delete=models.CASCADE)
+    def __str__(self):
+        return self.name
 
 
 class Course(models.Model):
     name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=20)
-    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    level = models.ForeignKey(Level, on_delete=models.CASCADE)
     course_units = models.IntegerField(blank=True)
     lecturer = models.ForeignKey("Staff", on_delete=models.PROTECT)
 
@@ -55,18 +65,16 @@ class Student(models.Model):
     student_reg = models.CharField(max_length=20, unique=True)
     student_faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
     student_dept = models.ForeignKey('Department', on_delete=models.CASCADE)
-    level = models.IntegerField(null=True, blank=True)
+    level = models.ForeignKey(Level, on_delete=models.CASCADE)
     carryovers = models.IntegerField(blank=True, null=True)
     paid_school_fees = models.BooleanField(null=True)
     cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     photo = models.ImageField(upload_to='photo/student/%Y/%m/%d/', blank=True)
 
 
-
-
-
     def __str__(self):
         return self.student_reg
+    
 
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -99,9 +107,18 @@ class Staff(models.Model):
         super().save(*args, **kwargs) """
 
 
+class CourseRegistraion(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    current_level_study = models.ForeignKey(Level, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.student.name} - {self.session.name} - {self.current_level_study.name}" 
+    
+
 class CourseItem(models.Model):
     course = models.ForeignKey(Course, related_name='course_items', on_delete=models.CASCADE)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course_registration = models.ForeignKey(CourseRegistraion, on_delete=models.CASCADE)
     student_course_ca = models.IntegerField()
     student_course_exam_score = models.IntegerField()
     student_grade = models.CharField(max_length=1, blank=True, null=True)
