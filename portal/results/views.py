@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login
-from .forms import StudentLoginForm, AddResultForm, SelectCourseForm, ScoreForm
+from .forms import StudentLoginForm, ScoreForm
 from django.forms import formset_factory
 from django.contrib.auth.decorators import login_required
 from . import models

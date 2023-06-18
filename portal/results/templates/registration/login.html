@@ -2,29 +2,46 @@
 
 {% block content %}
 
+ <nav class="navbar">
+        <nav class="logo">
+            <img class="logo1" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/16/FUTO_logo.png/220px-FUTO_logo.png" alt="">
 
-<div class="header">
-  <img src="" alt="">
+                <h3>FEDERAL UNIVERSITY OF TECHNOLOGY OWERRI</h3>
+        </nav>
 
-  <h3>FEDERAL UNIVERSITY OF TECHNOLOGY OWERRI</h3>
+    </nav>
+
+    <main class="main">
+        <h2>FUTO STUDENT RESULT PORTAL</h2>
+
+        <div class="main_box">
+
+                <div class="login">
+                    <div>
+                        <span class="fa fa-graduation-cap" style="color:rgb(238, 255, 0);"></span>
+                        <h4>Student Portal Login</h4>
+                    </div>
+<div class="forms">
+                 <form method="post" class="username" class="password">
+  {% csrf_token %} {{form.as_p}}
+                            <Button type="submit">Login</Button>
+                    </form>
 
 </div>
+      <div class="downpart">
 
-<h3 id="schoolname"> FUTO STUDENT RESULT PORTAL</h3>
-
-<div id="form">
-  <h3> Student Portal Login</h3>
-<form method="post">
-  {% csrf_token %} {{form.as_p}}
-
-  <p><input id="login" type="submit" value="Log In" /></p>
-
-  <p class="footnote"><a> <strong> Forgot Password</strong></a> <br>
-        First time here? <a href="">verify your account</a></p>
-        <p id="sponsor"><em>powered by ulpha deep labs</em></p>
-</form>
+                        <a href="#" class="forget_password">Forget Password</a>
+                        <div class="downpart2">
+                            <h6 class="first">First time here?</h6>
+                            <a href="#" class="second" style="color: red;">  Verify your account</a>
+                        </div>
+                        <i><h4>Powered By Ulpha deep labs</h4></i>
+                        </p>
+                    </div>
+                </div>
 
   </div>
+         </main>
 
 
 {% endblock %}
