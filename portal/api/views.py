@@ -11,10 +11,12 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from .serializers import StudentSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer
+from .serializers import StudentSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer, CourseSerializer
 from rest_framework import status
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.decorators import api_view, permission_classes
 
 User = get_user_model()
 
@@ -47,3 +49,17 @@ class StudentCoursesAPIView(APIView):
             'course_items': course_items
         })
         return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Require authentication for the view
+def filter_courses_by_lecturer(request):
+    lecturer = request.user.staff  # Retrieve the authenticated lecturer
+    courses = Course.objects.filter(lecturer=lecturer)
+    serialized_courses = CourseSerializer(courses, many=True)
+    return Response(serialized_courses.data)
+
+
+class CourseItemDetailAPIView(generics.RetrieveUpdateAPIView):
+    queryset = CourseItem.objects.all()
+    serializer_class = CourseItemSerializer
