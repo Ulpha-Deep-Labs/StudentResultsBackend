@@ -23,7 +23,7 @@ class CourseItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseItem
         fields = ['course', 'student_course_ca', 'student', 'student_course_exam_score', 'total_score', 'grade_point', 'carry_overs']
-        depth = 2
+        depth = 3
 
 class StudentCoursesSerializer(serializers.Serializer):
     student_grade = StudentGradeSerializer()

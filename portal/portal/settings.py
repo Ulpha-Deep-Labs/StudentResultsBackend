@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'results.apps.ResultsConfig',
     'api.apps.ApiConfig',
     'account.apps.AccountConfig',
+    'staff.apps.StaffConfig',
 
     # 3rd Party
     'rest_framework',

@@ -4,86 +4,76 @@ from django.conf import settings
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
+
 User = get_user_model()
 from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 from django.db.models.signals import m2m_changed
+from staff.models import Staff
 
 
 # Create your models here.
 class Faculty(models.Model):
     name = models.CharField(max_length=200)
-    department = models.ManyToManyField('Department', blank=True)
 
     def __str__(self):
         return self.name
+
 
 class Department(models.Model):
     name = models.CharField(max_length=200)
-
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
 
+
 class Session(models.Model):
-    SESSION_CHOICES = [
-        ('first', 'First'),
-        ('second', 'Second'),
-    ]
-    year= models.PositiveIntegerField()
-    semester = models.CharField(max_length=10, choices=SESSION_CHOICES)
+    name = models.CharField(max_length=20)
 
     def __str__(self):
-        return f'{str(self.year)} - {self.semester} '
+        return f'{str(self.name)} '
+
+
+class Semester(models.Model):
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    semester_name = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f'{str(self.semester_name)} - {self.session.name}'
 
 
 class Course(models.Model):
     name = models.CharField(max_length=200)
     course_code = models.CharField(max_length=20)
-    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     course_units = models.IntegerField(blank=True)
-    lecturer = models.ForeignKey("Staff", on_delete=models.PROTECT)
-
+    lecturer = models.ForeignKey(Staff, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.course_code
-
 
 
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     student_reg = models.CharField(max_length=20, unique=True)
     student_faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, null=True)
-    student_dept = models.ForeignKey('Department', on_delete=models.CASCADE, null=True)
+    student_dept = models.ForeignKey(Department, on_delete=models.CASCADE, null=True)
+    date_of_birth = models.DateField(null=True, blank=True)
     level = models.IntegerField(null=True, blank=True)
     carryovers = models.IntegerField(blank=True, null=True)
     paid_school_fees = models.BooleanField(null=True)
     cgpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     photo = models.ImageField(upload_to='photo/student/%Y/%m/%d/', blank=True)
 
-
-
-
-
     def __str__(self):
         return self.student_reg
 
-class Staff(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    department = models.ForeignKey('Department', on_delete=models.CASCADE)
-    photo = models.ImageField(upload_to='photo/staff/%Y/%m/%d/', blank=True)
-    def __str__(self):
-        return self.user.username
+    # student_offering_course = models.ForeignKey(Student, related_name='students_offering_course', on_delete=models.CASCADE)
+    # student_course_ca = models.IntegerField()
+    # student_course_exam_score = models.IntegerField()
+    # student_grade = models.CharField(max_length=1, blank=True)
 
-
-
-
-
-
-    #student_offering_course = models.ForeignKey(Student, related_name='students_offering_course', on_delete=models.CASCADE)
-    #student_course_ca = models.IntegerField()
-    #student_course_exam_score = models.IntegerField()
-    #student_grade = models.CharField(max_length=1, blank=True)
 
 """
     def save(self, *args, **kwargs):
@@ -110,6 +100,19 @@ class CourseItem(models.Model):
     t_grade_point = models.IntegerField(blank=True)
     carry_overs = models.BooleanField()
 
+    def update_student_carryovers(self):
+        # Get the associated Student object
+        student = self.student
+
+        # Calculate the total carry over value
+        carry_overs_total = CourseItem.objects.filter(student=student, carry_overs=True).aggregate(total_carry_overs=Sum('carry_overs'))
+
+        # Retrieve the total carry over value or set it to 0 if it's None
+        total_carry_overs = carry_overs_total['total_carry_overs'] or 0
+
+        # Update the carryovers field in the Student model
+        student.carryovers = total_carry_overs
+        student.save()
 
     def save(self):
         score = self.student_course_ca + self.student_course_exam_score
@@ -130,34 +133,35 @@ class CourseItem(models.Model):
         else:
             self.student_grade = "F"
 
-        if self.student_grade =='A':
-            self.grade_point =5
-        elif self.student_grade =='B':
-            self.grade_point =4
-        elif self.student_grade =='C':
-            self.grade_point =3
-        elif self.student_grade =='D':
-            self.grade_point =2
-        elif self.student_grade =='E':
-            self.grade_point =1
+        if self.student_grade == 'A':
+            self.grade_point = 5
+        elif self.student_grade == 'B':
+            self.grade_point = 4
+        elif self.student_grade == 'C':
+            self.grade_point = 3
+        elif self.student_grade == 'D':
+            self.grade_point = 2
+        elif self.student_grade == 'E':
+            self.grade_point = 1
 
-        elif self.student_grade =='F':
-            self.grade_point =0
+        elif self.student_grade == 'F':
+            self.grade_point = 0
 
-        if self.student_grade =='F':
+        if self.student_grade == 'F':
             self.carry_overs = True
         else:
-            self.carry_overs= False
+            self.carry_overs = False
 
         course_grade = self.grade_point * self.course.course_units
         self.t_grade_point = course_grade
 
+        self.update_student_carryovers()
 
         super().save()
 
-
     def __str__(self):
         return self.course.course_code
+
 
 
 class StudentGrade(models.Model):
@@ -178,14 +182,14 @@ class StudentGrade(models.Model):
         super().save(*args, **kwargs)
         self.student.save()
 
-
     def update_student_cgpa(self):
         self.student.cgpa = self.cgpa
         self.student.save()
 
     def calculate_total_grade_point(self):
         course_items = CourseItem.objects.filter(student=self.student, course__in=self.courses_offered.all())
-        total_grade_point = sum(course_item.t_grade_point for course_item in course_items if course_item.t_grade_point is not None)
+        total_grade_point = sum(
+            course_item.t_grade_point for course_item in course_items if course_item.t_grade_point is not None)
         return total_grade_point
 
     def calculate_total_course_units(self):
@@ -200,29 +204,10 @@ class StudentGrade(models.Model):
             self.gpa = 0
         return self.gpa
 
+
 @receiver(post_save, sender=CourseItem)
 def update_student_grade(sender, instance, **kwargs):
     student = instance.student
     student_grade, _ = StudentGrade.objects.get_or_create(student=student)
     student_grade.courses_offered.set(student.courseitem_set.values_list('course', flat=True))
     student_grade.save()
-
-
-@receiver(pre_delete, sender=StudentGrade)
-def delete_related_course_items(sender, instance, **kwargs):
-    instance.courses_offered.clear()
-
-
-
-
-@receiver(post_save, sender=CourseItem)
-def update_student_carryovers(sender, instance, **kwargs):
-    # Get the associated Student object
-    student = instance.student
-
-    # Count the number of CourseItems with carry_overs=True
-    carry_overs_count = CourseItem.objects.filter(student=student, carry_overs=True).count()
-
-    # Update the carryovers field in the Student model
-    student.carryovers = carry_overs_count
-    student.save()
