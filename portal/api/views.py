@@ -65,43 +65,36 @@ class CourseItemDetailAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = CourseItemSerializer
 
 
-class CourseListAPIView(APIView):
+class CourseListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = CourseSerializer
 
-    def get(self, request):
-        user = request.user
-        session_name = request.query_params.get('session')
-        semester_name = request.query_params.get('semester')
+    def get_queryset(self):
+        user = self.request.user
+        session_name = self.request.query_params.get('session')
+        semester_name = self.request.query_params.get('semester')
 
-        try:
-            session = Session.objects.get(name=session_name)
-            semester = Semester.objects.get(session=session, semester_name=semester_name)
-        except Session.DoesNotExist:
-            return Response({'error': 'Session does not exist'}, status=404)
-        except Semester.DoesNotExist:
-            return Response({'error': 'Semester does not exist'}, status=404)
+        session = get_object_or_404(Session, name=session_name)
+        semester = get_object_or_404(Semester, session=session, semester_name=semester_name)
 
-        courses = Course.objects.filter(course_items__student=user.student, semester=semester)
+        queryset = Course.objects.filter(course_items__student=user.student, semester=semester)
 
-        course_data = []
-        for course in courses:
-            course_items = CourseItem.objects.filter(course=course, student=user.student)
-            course_item_data = []
-            for course_item in course_items:
-                course_item_data.append({
-                    'student_course_ca': course_item.student_course_ca,
-                    'student_course_exam_score': course_item.student_course_exam_score,
-                    'student_grade': course_item.student_grade,
-                    'total_score': course_item.total_score,
-                    'grade_point': course_item.grade_point,
-                    't_grade_point': course_item.t_grade_point,
-                    'carry_overs': course_item.carry_overs
-                })
-            course_data.append({
-                'name': course.name,
-                'course_code': course.course_code,
-                'semester': course.semester.semester_name,
-                'course_items': course_item_data
-            })
+        return queryset
 
-        return Response(course_data)
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        # Retrieve the StudentGrade instance for the logged-in user
+        student_grade = get_object_or_404(StudentGrade, student=request.user.student)
+
+        # Serialize the StudentGrade data separately using the StudentGradeSerializer
+        student_grade_serializer = StudentGradeSerializer(student_grade)
+
+        # Merge the serialized StudentGrade data into the API response
+        data = {
+            'courses': serializer.data,
+            'student_grade': student_grade_serializer.data
+        }
+
+        return Response(data)
