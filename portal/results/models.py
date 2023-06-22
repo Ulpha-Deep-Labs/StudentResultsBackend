@@ -163,6 +163,24 @@ class CourseItem(models.Model):
         return self.course.course_code
 
 
+class SemesterGPA(models.Model):
+    student_grade = models.ForeignKey("StudentGrade", on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    total_grade_points = models.IntegerField(blank=True, null=True)
+    total_course_units = models.IntegerField(blank=True, null=True)
+    courses_offered = models.ManyToManyField(Course)
+
+
+
+    def __str__(self):
+        return f" {self.student_grade.student.student_reg} - {self.semester}   "
+
+    def save(self, *args, **kwargs):
+        self.courses_offered.set(self.student_grade.courses_offered.filter(semester=self.semester))
+        super().save(*args, **kwargs)
+
+
 
 class StudentGrade(models.Model):
     student = models.OneToOneField(Student, on_delete=models.CASCADE, primary_key=True)
@@ -181,6 +199,7 @@ class StudentGrade(models.Model):
         self.update_student_cgpa()
         super().save(*args, **kwargs)
         self.student.save()
+        self.update_semester_gpas()
 
     def update_student_cgpa(self):
         self.student.cgpa = self.cgpa
@@ -204,10 +223,49 @@ class StudentGrade(models.Model):
             self.gpa = 0
         return self.gpa
 
+    def update_semester_gpas(self):
+        semesters = Semester.objects.all()
+        for semester in semesters:
+            semester_gpa, created = SemesterGPA.objects.get_or_create(student_grade=self, semester=semester)
+            semester_gpa.total_grade_points = self.calculate_total_grade_point_by_semester(semester)
+            semester_gpa.total_course_units = self.calculate_total_course_units_by_semester(semester)
+            semester_gpa.gpa = self.calculate_gpa_by_semester(semester)
+            semester_gpa.save()
+
+    def calculate_total_grade_point_by_semester(self, semester):
+        course_items = CourseItem.objects.filter(student=self.student, course__semester=semester)
+        total_grade_point = sum(
+            course_item.t_grade_point for course_item in course_items if course_item.t_grade_point is not None)
+        return total_grade_point
+
+    def calculate_total_course_units_by_semester(self, semester):
+        course_items = CourseItem.objects.filter(student=self.student, course__semester=semester)
+        total_course_units = sum(course_item.course.course_units for course_item in course_items)
+        return total_course_units
+
+    def calculate_gpa_by_semester(self, semester):
+        total_grade_point = self.calculate_total_grade_point_by_semester(semester)
+        total_course_units = self.calculate_total_course_units_by_semester(semester)
+        if total_course_units != 0:
+            gpa = total_grade_point / total_course_units
+        else:
+            gpa = 0
+        return gpa
+
 
 @receiver(post_save, sender=CourseItem)
 def update_student_grade(sender, instance, **kwargs):
     student = instance.student
     student_grade, _ = StudentGrade.objects.get_or_create(student=student)
     student_grade.courses_offered.set(student.courseitem_set.values_list('course', flat=True))
+    student_grade.update_semester_gpas()
     student_grade.save()
+
+
+
+
+
+
+
+
+

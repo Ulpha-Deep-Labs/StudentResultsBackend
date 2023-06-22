@@ -1,6 +1,6 @@
 from rest_framework import generics
 from rest_framework.generics import RetrieveAPIView
-from results.models import  CourseItem, Student, Course, StudentGrade, Session, Semester
+from results.models import  CourseItem, Student, Course, StudentGrade, Session, Semester, SemesterGPA
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from django.contrib.auth import get_user_model
@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from .serializers import StudentSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer, CourseSerializer, SemesterSerializer, SessionSerializer
+from .serializers import StudentSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer, CourseSerializer, SemesterSerializer, SessionSerializer, SemesterGradeSerializer
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
@@ -86,15 +86,27 @@ class CourseListAPIView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
 
         # Retrieve the StudentGrade instance for the logged-in user
-        student_grade = get_object_or_404(StudentGrade, student=request.user.student)
+        User = get_user_model()
+        student = User.objects.get(username=request.user.username).student
+        student_grade = get_object_or_404(StudentGrade, student=student)
 
         # Serialize the StudentGrade data separately using the StudentGradeSerializer
         student_grade_serializer = StudentGradeSerializer(student_grade)
 
-        # Merge the serialized StudentGrade data into the API response
+        # Retrieve the SemesterGPA instance for the specific semester and StudentGrade
+        session_name = self.request.query_params.get('session')
+        semester_name = self.request.query_params.get('semester')
+        semester = get_object_or_404(Semester, session__name=session_name, semester_name=semester_name)
+        semester_gpa = get_object_or_404(SemesterGPA, student_grade=student_grade, semester=semester)
+
+        # Serialize the SemesterGPA data using the SemesterGPASerializer
+        semester_gpa_serializer = SemesterGradeSerializer(semester_gpa)
+
+        # Merge the serialized StudentGrade and SemesterGPA data into the API response
         data = {
             'courses': serializer.data,
-            'student_grade': student_grade_serializer.data
+            'student_grade': student_grade_serializer.data,
+            'semester_gpa': semester_gpa_serializer.data
         }
 
         return Response(data)
