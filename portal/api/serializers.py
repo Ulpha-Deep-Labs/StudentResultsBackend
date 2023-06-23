@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 User = get_user_model()
-from results.models import Student, CourseItem, Course, StudentGrade, Staff, Session, Semester, SemesterGPA
+from results.models import Student, CourseItem, Course, StudentGrade, Staff, Session, Semester, SemesterGPA, CourseRegistration
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,3 +57,14 @@ class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester
         fields = '__all__'
+
+class CourseSerializer2(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'name', 'course_code', 'semester', 'course_units', 'lecturer']
+
+class CourseRegistrationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CourseRegistration
+        fields = ['id', 'course', 'student']

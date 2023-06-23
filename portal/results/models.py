@@ -114,7 +114,7 @@ class CourseItem(models.Model):
         student.carryovers = total_carry_overs
         student.save()
 
-    def save(self):
+    def save(self, *args, **kwargs):
         score = self.student_course_ca + self.student_course_exam_score
         self.total_score = score
 
@@ -157,7 +157,7 @@ class CourseItem(models.Model):
 
         self.update_student_carryovers()
 
-        super().save()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.course.course_code
@@ -200,6 +200,7 @@ class StudentGrade(models.Model):
         super().save(*args, **kwargs)
         self.student.save()
         self.update_semester_gpas()
+
 
     def update_student_cgpa(self):
         self.student.cgpa = self.cgpa
@@ -258,14 +259,41 @@ def update_student_grade(sender, instance, **kwargs):
     student = instance.student
     student_grade, _ = StudentGrade.objects.get_or_create(student=student)
     student_grade.courses_offered.set(student.courseitem_set.values_list('course', flat=True))
-    student_grade.update_semester_gpas()
     student_grade.save()
+    student_grade.update_semester_gpas()
 
 
 
 
 
+class CourseRegistration(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
+    def save(self, *args, **kwargs):
+        # Create a CourseItem entry for the registered course
+        course_item = CourseItem.objects.create(
+            course=self.course,
+            student=self.student,
+            student_course_ca=0,
+            student_course_exam_score=0,
+            student_grade='',
+            total_score=0,
+            grade_point=0,
+            t_grade_point=0,
+            carry_overs=False
+        )
+        super(CourseRegistration, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete the associated CourseItem entry
+        course_item = CourseItem.objects.get(course=self.course, student=self.student)
+        course_item.delete()
+        super().delete(*args, **kwargs)
+
+
+    def __str__(self):
+        return f'{self.student.student_reg} Registered {self.course}  '
 
 
 

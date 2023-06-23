@@ -1,7 +1,8 @@
 from rest_framework import generics
 from rest_framework.generics import RetrieveAPIView
-from results.models import  CourseItem, Student, Course, StudentGrade, Session, Semester, SemesterGPA
+from results.models import  CourseItem, Student, Course, StudentGrade, Session, Semester, SemesterGPA, CourseRegistration
 from rest_framework.views import APIView
+from rest_framework import serializers
 from rest_framework.decorators import api_view
 from django.contrib.auth import get_user_model
 from rest_framework.authentication import TokenAuthentication
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from .serializers import StudentSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer, CourseSerializer, SemesterSerializer, SessionSerializer, SemesterGradeSerializer
+from .serializers import StudentSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer, CourseSerializer, SemesterSerializer, SessionSerializer, SemesterGradeSerializer, CourseRegistrationSerializer,  CourseSerializer2
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
@@ -110,3 +111,27 @@ class CourseListAPIView(generics.ListAPIView):
         }
 
         return Response(data)
+
+
+class CourseRegistrationAPIView(generics.ListCreateAPIView):
+    serializer_class = CourseRegistrationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        student = self.request.user.student
+        registered_course_ids = CourseRegistration.objects.filter(student=student).values_list('course', flat=True)
+        available_courses = Course.objects.exclude(id__in=registered_course_ids)
+        return available_courses
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return CourseSerializer
+        return self.serializer_class
+
+    def perform_create(self, serializer):
+        student = self.request.user.student
+        course = serializer.validated_data.get('course')
+        if CourseRegistration.objects.filter(student=student, course=course).exists():
+            raise serializers.ValidationError('The course has already been registered.')
+        serializer.save(student=student)
+        return Response({'message': 'Course registration successful.'}, status=201)

@@ -23,6 +23,7 @@ admin.site.register(models.Department)
 admin.site.register(models.Session)
 admin.site.register(models.Student)
 admin.site.register(models.SemesterGPA)
+admin.site.register(models.CourseRegistration)
 admin.site.register(models.StudentGrade)
 admin.site.register(models.Semester)
 
