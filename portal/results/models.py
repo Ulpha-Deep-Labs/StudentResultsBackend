@@ -88,10 +88,32 @@ class Student(models.Model):
             self.grade = "D"
         super().save(*args, **kwargs) """
 
+class SemesterGPA(models.Model):
+    student_grade = models.ForeignKey("StudentGrade", on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    total_grade_points = models.IntegerField(blank=True, null=True)
+    total_course_units = models.IntegerField(blank=True, null=True)
+    courses_offered = models.ManyToManyField(Course)
+
+
+
+    def __str__(self):
+        return f" {self.student_grade.student.student_reg} - {self.semester}   "
+
+    def save(self, *args, **kwargs):
+        #self.courses_offered.set(self.student_grade.courses_offered.filter(semester=self.semester))
+        super().save(*args, **kwargs)
+
+
+
+
+
+
 
 class CourseItem(models.Model):
     course = models.ForeignKey(Course, related_name='course_items', on_delete=models.CASCADE)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='course_items')
     student_course_ca = models.IntegerField()
     student_course_exam_score = models.IntegerField()
     student_grade = models.CharField(max_length=1, blank=True, null=True)
@@ -163,24 +185,6 @@ class CourseItem(models.Model):
         return self.course.course_code
 
 
-class SemesterGPA(models.Model):
-    student_grade = models.ForeignKey("StudentGrade", on_delete=models.CASCADE)
-    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
-    gpa = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
-    total_grade_points = models.IntegerField(blank=True, null=True)
-    total_course_units = models.IntegerField(blank=True, null=True)
-    courses_offered = models.ManyToManyField(Course)
-
-
-
-    def __str__(self):
-        return f" {self.student_grade.student.student_reg} - {self.semester}   "
-
-    def save(self, *args, **kwargs):
-        self.courses_offered.set(self.student_grade.courses_offered.filter(semester=self.semester))
-        super().save(*args, **kwargs)
-
-
 
 class StudentGrade(models.Model):
     student = models.OneToOneField(Student, on_delete=models.CASCADE, primary_key=True)
@@ -193,13 +197,14 @@ class StudentGrade(models.Model):
         return f"{self.student.student_reg} "
 
     def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.update_semester_gpas()
         self.total_grade_point = self.calculate_total_grade_point()
         self.total_course_units = self.calculate_total_course_units()
         self.cgpa = self.calculate_gpa()
         self.update_student_cgpa()
-        super().save(*args, **kwargs)
+
         self.student.save()
-        self.update_semester_gpas()
 
 
     def update_student_cgpa(self):
@@ -258,9 +263,19 @@ class StudentGrade(models.Model):
 def update_student_grade(sender, instance, **kwargs):
     student = instance.student
     student_grade, _ = StudentGrade.objects.get_or_create(student=student)
-    student_grade.courses_offered.set(student.courseitem_set.values_list('course', flat=True))
+
+    # Save the StudentGrade instance to assign an id
     student_grade.save()
-    student_grade.update_semester_gpas()
+
+    # Update the semester GPAs before setting the many-to-many relationship
+    #student_grade.update_semester_gpas()
+
+    # Update the many-to-many relationship
+    student_grade.courses_offered.set(student.course_items.values_list('course', flat=True))
+
+    # Save the StudentGrade instance again to save the changes to the many-to-many relationship
+    student_grade.save()
+
 
 
 
