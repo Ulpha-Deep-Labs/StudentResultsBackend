@@ -102,8 +102,8 @@ class SemesterGPA(models.Model):
         return f" {self.student_grade.student.student_reg} - {self.semester}   "
 
     def save(self, *args, **kwargs):
-        #self.courses_offered.set(self.student_grade.courses_offered.filter(semester=self.semester))
         super().save(*args, **kwargs)
+        self.courses_offered.set(self.student_grade.courses_offered.filter(semester=self.semester))
 
 
 
