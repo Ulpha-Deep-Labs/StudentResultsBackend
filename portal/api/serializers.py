@@ -23,7 +23,6 @@ class SemesterGradeSerializer(serializers.ModelSerializer):
 
 
 
-
 class CourseItemSerializer(serializers.ModelSerializer):
     course = serializers.CharField(source='course.name')
     class Meta:
@@ -68,13 +67,14 @@ class CourseRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseRegistration
         fields = ['id', 'course', 'student']
+        depth = 2
 
 
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ['name', 'course_code', 'semester', 'course_units', 'lecturer']
+        fields = ['id', 'name', 'course_code', 'semester', 'course_units', 'lecturer']
 
 class CourseItemSerializer(serializers.ModelSerializer):
     course = CourseSerializer()
@@ -82,6 +82,12 @@ class CourseItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseItem
         fields = ['course', 'student_course_ca', 'student_course_exam_score', 'student_grade', 'total_score', 'grade_point', 't_grade_point', 'carry_overs']
+
+class CourseItemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseItem
+        fields = '__all__'
+
 
 class SemesterGPASerializer(serializers.ModelSerializer):
     class Meta:
