@@ -149,3 +149,83 @@ class StudentDataSerializer(serializers.Serializer):
             'total_grade_points': semester_gpa.total_grade_points,
             'total_course_units': semester_gpa.total_course_units
         }
+
+
+class SessionResultSerializer(serializers.Serializer):
+    student = serializers.SerializerMethodField()
+    session = serializers.SerializerMethodField()
+    student_grade = serializers.SerializerMethodField()
+    course_items = serializers.SerializerMethodField()
+    semester_gpa = serializers.SerializerMethodField()
+
+    def get_student(self, obj):
+        student = obj['student']
+        return {
+            'student_reg': student.student_reg,
+            'student_faculty': student.student_faculty.name if student.student_faculty else None,
+            'student_dept': student.student_dept.name if student.student_dept else None,
+            'date_of_birth': student.date_of_birth,
+            'level': student.level,
+            'carryovers': student.carryovers,
+            'paid_school_fees': student.paid_school_fees,
+            'cgpa': student.cgpa,
+            'photo': student.photo.url if student.photo else None
+        }
+
+    def get_session(self, obj):
+        semester = obj.get('semester')
+        student_grade = obj.get('student_grade')
+        semester_gpa = obj.get('semester_gpa')
+
+        session = semester.session if semester else None
+        session_name = session.name if session else None
+
+        if session_name and student_grade:
+            # Retrieve the two semesters within the session
+            semesters = Semester.objects.filter(session=session)
+
+            # Retrieve the semester GPAs for the two semesters
+            semester_gpas = SemesterGPA.objects.filter(student_grade=student_grade, semester__in=semesters)
+
+            # Serialize the semester GPAs
+            semester_gpa_data = [
+                {
+                    'semester': semester_gpa.semester.semester_name,
+                    'gpa': semester_gpa.gpa,
+                    'total_grade_points': semester_gpa.total_grade_points,
+                    'total_course_units': semester_gpa.total_course_units
+                }
+                for semester_gpa in semester_gpas
+            ]
+        else:
+            semester_gpa_data = []
+
+        return {
+            'session_name': session_name,
+            'semester_gpas': semester_gpa_data
+        }
+
+    def get_student_grade(self, obj):
+        student_grade = obj['student_grade']
+        return {
+            'total_grade_point': student_grade.total_grade_point,
+            'total_course_units': student_grade.total_course_units,
+            'cgpa': student_grade.cgpa
+        }
+
+    def get_course_items(self, obj):
+        course_items = obj['course_items']
+        serializer = CourseItemSerializer(course_items, many=True)
+        return serializer.data
+
+    def get_semester_gpa(self, obj):
+        semester_gpas = obj['semester_gpa']
+        return [
+            {
+                'semester': semester_gpa.semester.semester_name,
+                'gpa': semester_gpa.gpa,
+                'total_grade_points': semester_gpa.total_grade_points,
+                'total_course_units': semester_gpa.total_course_units
+            }
+            for semester_gpa in semester_gpas
+        ]

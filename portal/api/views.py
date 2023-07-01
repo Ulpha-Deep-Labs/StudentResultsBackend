@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from .serializers import StudentSerializer, StudentDataSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer, CourseSerializer, SemesterSerializer, SessionSerializer, SemesterGradeSerializer, CourseRegistrationSerializer,  CourseItemsSerializer
+from .serializers import StudentSerializer, StudentDataSerializer, CourseItemSerializer, StudentGradeSerializer, StudentCoursesSerializer, CourseSerializer, SemesterSerializer, SessionSerializer, SemesterGradeSerializer, CourseRegistrationSerializer,  CourseItemsSerializer, SessionResultSerializer
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
@@ -154,3 +154,39 @@ class CourseRegistrationViewSet(viewsets.ModelViewSet):
 
         registration_serializer = CourseRegistrationSerializer(registration)
         return Response(registration_serializer.data, status=201)
+
+class StudentSessionAPIView(APIView):
+    def get(self, request):
+        # Retrieve the session name from the query parameters
+        session_name = request.query_params.get('session_name')
+
+        # Retrieve the authenticated student
+        student = request.user.student
+
+        # Get the Session and StudentGrade for the specified session
+        try:
+            session = Session.objects.get(name=session_name)
+            student_grade = StudentGrade.objects.get(student=student)
+
+            # Retrieve the two semesters within the session
+            semesters = Semester.objects.filter(session=session)
+
+            # Retrieve the semester GPAs for the two semesters
+            semester_gpas = SemesterGPA.objects.filter(student_grade=student_grade, semester__in=semesters)
+
+            # Get the CourseItems for the student and semesters
+            course_items = CourseItem.objects.filter(student=student, course__semester__in=semesters)
+
+            # Serialize the data
+            serializer = SessionResultSerializer({
+                'student': student,
+                'session': session,
+                'student_grade': student_grade,
+                'course_items': course_items,
+                'semester_gpa': semester_gpas
+            })
+
+            return Response(serializer.data)
+
+        except (Session.DoesNotExist, StudentGrade.DoesNotExist):
+            return Response(status=status.HTTP_404_NOT_FOUND)

@@ -3,7 +3,7 @@ from rest_framework_swagger.views import get_swagger_view
 from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView)
 from .views import StudentDetailView
 from rest_framework import routers
-from .views import StudentCoursesAPIView, filter_courses_by_lecturer, CourseItemDetailAPIView, StudentDataAPIView, CourseRegistrationViewSet
+from .views import StudentCoursesAPIView, filter_courses_by_lecturer, CourseItemDetailAPIView, StudentDataAPIView, CourseRegistrationViewSet, StudentSessionAPIView
 
 
 schema_view = get_swagger_view(title='API Documentation')
@@ -22,4 +22,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('lecturer-course', filter_courses_by_lecturer, name ='filter_lecturer'),
     path('courses-filter/', StudentDataAPIView.as_view(), name='course_item'),
+    path('session-result/', StudentSessionAPIView.as_view(), name='session_result')
 ]
